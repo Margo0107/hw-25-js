@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import React from "react";
 import Emoji from "./components/emoji";
 import Winner from "./components/Winner";
-import "./components/index.css"
+import "./components/index.css";
 
 const emojis = [
   { id: 1, icon: "😃" },
@@ -11,48 +11,56 @@ const emojis = [
   { id: 5, icon: "😍" },
 ];
 
-function App() {
-  const [votes, setVotes] = useState(() => {
+class App extends React.Component {
+  constructor(props) {
+    super(props);
     const saved = localStorage.getItem("votes");
-    return saved ? JSON.parse(saved) : emojis.map((e) => ({ ...e, count: 0 }));
-  });
+    this.state = {
+      votes: saved
+        ? JSON.parse(saved)
+        : emojis.map((e) => ({ ...e, count: 0 })),
+      winner: null,
+    };
+  }
 
-  const [winner, setWinner] = useState(null);
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.votes !== this.state.votes) {
+      localStorage.setItem("votes", JSON.stringify(this.state.votes));
+    }
+  }
 
-  useEffect(() => {
-    localStorage.setItem("votes", JSON.stringify(votes));
-  }, [votes]);
-
-  const handleVote = (id) => {
-    setVotes(
-      votes.map((e) => (e.id === id ? { ...e, count: e.count + 1 } : e))
+  handleVote = (id) => {
+    const updatedVotes = this.state.votes.map((e) =>
+      e.id === id ? { ...e, count: e.count + 1 } : e
     );
+    this.setState({ votes: updatedVotes });
   };
 
-  const showResults = () => {
-    const max = Math.max(...votes.map((e) => e.count));
-    const winnerEmoji = votes.find((e) => e.count === max);
-    setWinner(winnerEmoji);
+  showResults = () => {
+    const max = Math.max(...this.state.votes.map((e) => e.count));
+    const winnerEmoji = this.state.votes.find((e) => e.count === max);
+    this.setState({ winner: winnerEmoji });
   };
 
-  const clearVotes = () => {
+  clearVotes = () => {
     const cleared = emojis.map((e) => ({ ...e, count: 0 }));
-    setVotes(cleared);
-    setWinner(null);
+    this.setState({ votes: cleared, winner: null });
     localStorage.removeItem("votes");
   };
 
-  return (
-    <div className="container">
-      <h1>Vote for the best emoticon</h1>
-      {votes.map((e) => (
-        <Emoji key={e.id} emoji={e} onVote={handleVote} />
-      ))}
-      <button onClick={showResults}>Show Results</button>
-      <button onClick={clearVotes}>Clear results</button>
+  render() {
+    return (
+      <div className="container">
+        <h1>Vote for the best emoticon</h1>
+        {this.state.votes.map((e) => (
+          <Emoji key={e.id} emoji={e} onVote={this.handleVote} />
+        ))}
+        <button onClick={this.showResults}>Show Results</button>
+        <button onClick={this.clearVotes}>Clear results</button>
 
-      {winner && <Winner emoji={winner} />}
-    </div>
-  );
+        {this.state.winner && <Winner emoji={this.state.winner} />}
+      </div>
+    );
+  }
 }
 export default App;
